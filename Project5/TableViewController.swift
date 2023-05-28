@@ -56,9 +56,6 @@ final class TableViewController: UITableViewController {
     private func submit(_ answer: String) {
         let lowerAnswer = answer.lowercased()
 
-        let errorTitle: String
-        let errorMessage: String
-
         if isPossible(word: lowerAnswer) {
             if isOriginal(word: lowerAnswer) {
                 if isReal(word: lowerAnswer) {
@@ -66,26 +63,18 @@ final class TableViewController: UITableViewController {
 
                     let indexPath = IndexPath(row: 0, section: 0)
                     tableView.insertRows(at: [indexPath], with: .automatic)
-                    return
                 } else {
-                    errorTitle = "Word not recognised"
-                    errorMessage = "You can't just make them up, you know!"
+                    showErrorMessage(title: "Word not recognised", message: "You can't just make them up, you know!")
                 }
             } else {
-                errorTitle = "Word used already"
-                errorMessage = "Be more original!"
+                showErrorMessage(title: "Word used already", message: "Be more original!")
             }
         } else {
             guard let title = title?.lowercased() else {
                 return
             }
-            errorTitle = "Word not possible"
-            errorMessage = "You can't spell that word from \(title)"
+            showErrorMessage(title: "Word not possible", message: "You can't spell that word from \(title)")
         }
-
-        let alertController = UIAlertController(title: errorTitle, message: errorMessage, preferredStyle: .alert)
-        alertController.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alertController, animated: true)
     }
 
     private func isPossible(word: String) -> Bool {
@@ -120,6 +109,12 @@ final class TableViewController: UITableViewController {
         }
 
         return misspelledRange.location == NSNotFound
+    }
+
+    private func showErrorMessage(title: String, message: String) {
+        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alertController.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alertController, animated: true)
     }
 
     @objc private func promptForAnswer() {
