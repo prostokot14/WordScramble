@@ -18,7 +18,7 @@ final class TableViewController: UITableViewController {
 
         if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
             if let startWords = try? String(contentsOf: startWordsURL) {
-                allWords = startWords.components(separatedBy: "\n")
+                allWords = startWords.components(separatedBy: .newlines)
             }
         }
         
@@ -28,14 +28,14 @@ final class TableViewController: UITableViewController {
         
         startGame()
     }
-    
+
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         usedWords.count
     }
-    
+
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Word", for: indexPath)
-        
+
         if #available(iOS 14.0, *) {
             var content = cell.defaultContentConfiguration()
             content.text = usedWords[indexPath.row]
@@ -43,23 +43,47 @@ final class TableViewController: UITableViewController {
         } else {
             cell.textLabel?.text = usedWords[indexPath.row]
         }
-        
+
         return cell
     }
-    
+
     private func startGame() {
         title = allWords.randomElement()
         usedWords.removeAll(keepingCapacity: true)
         tableView.reloadData()
     }
-    
+
     private func submit(_ answer: String) {
+        let lowerAnswer = answer.lowercased()
+
+        if isPossible(word: lowerAnswer) {
+            if isOriginal(word: lowerAnswer) {
+                if isReal(word: lowerAnswer) {
+                    usedWords.insert(answer, at: 0)
+
+                    let indexPath = IndexPath(row: 0, section: 0)
+                    tableView.insertRows(at: [indexPath], with: .automatic)
+                }
+            }
+        }
     }
-    
+
+    private func isPossible(word: String) -> Bool {
+        true
+    }
+
+    private func isOriginal(word: String) -> Bool {
+        true
+    }
+
+    private func isReal(word: String) -> Bool {
+        true
+    }
+
     @objc private func promptForAnswer() {
         let alertController = UIAlertController(title: "Enter answer", message: nil, preferredStyle: .alert)
         alertController.addTextField()
-        
+
         let submitAlertAction = UIAlertAction(title: "Submit", style: .default) { [weak self, weak alertController] _ in
             guard let answer = alertController?.textFields?[0].text else {
                 return
