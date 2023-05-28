@@ -92,6 +92,10 @@ final class TableViewController: UITableViewController {
         guard var tempWord = title?.lowercased() else {
             return false
         }
+        
+        if tempWord == word {
+            return false
+        }
 
         for letter in word {
             if let position = tempWord.firstIndex(of: letter) {
@@ -110,7 +114,11 @@ final class TableViewController: UITableViewController {
 
     private func isReal(word: String) -> Bool {
         let misspelledRange = UITextChecker().rangeOfMisspelledWord(in: word, range: NSRange(location: 0, length: word.utf16.count), startingAt: 0, wrap: false, language: "en")
-        
+
+        if word.count < 3 {
+            return false
+        }
+
         return misspelledRange.location == NSNotFound
     }
 
