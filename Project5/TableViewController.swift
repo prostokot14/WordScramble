@@ -13,7 +13,7 @@ final class TableViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(promptForAnswer))
 
         if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
@@ -21,11 +21,11 @@ final class TableViewController: UITableViewController {
                 allWords = startWords.components(separatedBy: .newlines)
             }
         }
-        
+
         if allWords.isEmpty {
             allWords = ["silkwarm"]
         }
-        
+
         startGame()
     }
 
@@ -69,15 +69,29 @@ final class TableViewController: UITableViewController {
     }
 
     private func isPossible(word: String) -> Bool {
-        true
+        guard var tempWord = title?.lowercased() else {
+            return false
+        }
+
+        for letter in word {
+            if let position = tempWord.firstIndex(of: letter) {
+                tempWord.remove(at: position)
+            } else {
+                return false
+            }
+        }
+
+        return true
     }
 
     private func isOriginal(word: String) -> Bool {
-        true
+        !usedWords.contains(word)
     }
 
     private func isReal(word: String) -> Bool {
-        true
+        let misspelledRange = UITextChecker().rangeOfMisspelledWord(in: word, range: NSRange(location: 0, length: word.utf16.count), startingAt: 0, wrap: false, language: "en")
+        
+        return misspelledRange.location == NSNotFound
     }
 
     @objc private func promptForAnswer() {
@@ -90,7 +104,7 @@ final class TableViewController: UITableViewController {
             }
             self?.submit(answer)
         }
-        
+
         alertController.addAction(submitAlertAction)
         present(alertController, animated: true)
     }
