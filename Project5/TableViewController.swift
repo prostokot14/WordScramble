@@ -8,9 +8,11 @@
 import UIKit
 
 final class TableViewController: UITableViewController {
+    // MARK: - Private properties
     var allWords = [String]()
     var usedWords = [String]()
 
+    // MARK: - UIViewController
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -30,28 +32,26 @@ final class TableViewController: UITableViewController {
         startGame()
     }
 
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        usedWords.count
-    }
-
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "Word", for: indexPath)
-
-        if #available(iOS 14.0, *) {
-            var content = cell.defaultContentConfiguration()
-            content.text = usedWords[indexPath.row]
-            cell.contentConfiguration = content
-        } else {
-            cell.textLabel?.text = usedWords[indexPath.row]
-        }
-
-        return cell
-    }
-
+    // MARK: - Private Methods
     @objc private func startGame() {
         title = allWords.randomElement()
         usedWords.removeAll(keepingCapacity: true)
         tableView.reloadData()
+    }
+
+    @objc private func promptForAnswer() {
+        let alertController = UIAlertController(title: "Enter answer", message: nil, preferredStyle: .alert)
+        alertController.addTextField()
+
+        let submitAlertAction = UIAlertAction(title: "Submit", style: .default) { [weak self, weak alertController] _ in
+            guard let answer = alertController?.textFields?[0].text else {
+                return
+            }
+            self?.submit(answer)
+        }
+
+        alertController.addAction(submitAlertAction)
+        present(alertController, animated: true)
     }
 
     private func submit(_ answer: String) {
@@ -117,19 +117,25 @@ final class TableViewController: UITableViewController {
         alertController.addAction(UIAlertAction(title: "OK", style: .default))
         present(alertController, animated: true)
     }
+}
 
-    @objc private func promptForAnswer() {
-        let alertController = UIAlertController(title: "Enter answer", message: nil, preferredStyle: .alert)
-        alertController.addTextField()
+// MARK: - UITableViewController
+extension TableViewController {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        usedWords.count
+    }
 
-        let submitAlertAction = UIAlertAction(title: "Submit", style: .default) { [weak self, weak alertController] _ in
-            guard let answer = alertController?.textFields?[0].text else {
-                return
-            }
-            self?.submit(answer)
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Word", for: indexPath)
+
+        if #available(iOS 14.0, *) {
+            var content = cell.defaultContentConfiguration()
+            content.text = usedWords[indexPath.row]
+            cell.contentConfiguration = content
+        } else {
+            cell.textLabel?.text = usedWords[indexPath.row]
         }
 
-        alertController.addAction(submitAlertAction)
-        present(alertController, animated: true)
+        return cell
     }
 }
