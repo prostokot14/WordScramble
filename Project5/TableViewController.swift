@@ -9,33 +9,52 @@ import UIKit
 
 final class TableViewController: UITableViewController {
     // MARK: - Private properties
-    var allWords = [String]()
-    var usedWords = [String]()
+    private var allWords = [String]()
+    private var gameState = GameState(currentWord: "", usedWords: [])
 
     // MARK: - UIViewController
     override func viewDidLoad() {
         super.viewDidLoad()
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(promptForAnswer))
-        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .refresh, target: self, action: #selector(startGame))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .refresh, target: self, action: #selector(startNewGame))
 
-        if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
-            if let startWords = try? String(contentsOf: startWordsURL) {
-                allWords = startWords.components(separatedBy: .newlines)
-            }
+        if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt"), let startWords = try? String(contentsOf: startWordsURL) {
+            allWords = startWords.components(separatedBy: .newlines)
         }
 
         if allWords.isEmpty {
-            allWords = ["silkwarm"]
+            allWords = ["silkworm"]
         }
 
-        startGame()
+        performSelector(inBackground: #selector(startGame), with: nil)
     }
 
     // MARK: - Private Methods
     @objc private func startGame() {
-        title = allWords.randomElement()
-        usedWords.removeAll(keepingCapacity: true)
+        if let loadedState = UserDefaults.standard.object(forKey: "GameState") as? Data, let decodedState = try?  JSONDecoder().decode(GameState.self, from: loadedState) {
+            self.gameState = decodedState
+        }
+        
+        if gameState.currentWord.isEmpty {
+            startNewGame()
+        }
+        
+        performSelector(onMainThread: #selector(loadGameStateView), with: nil, waitUntilDone: false)
+    }
+    
+    @objc private func startNewGame() {
+        DispatchQueue.global().async {
+            self.gameState.currentWord = self.allWords.randomElement() ?? "silkworm"
+            self.gameState.usedWords.removeAll(keepingCapacity: true)
+            
+            self.saveGameState()
+            self.performSelector(onMainThread: #selector(self.loadGameStateView), with: nil, waitUntilDone: false)
+        }
+    }
+    
+    @objc func loadGameStateView() {
+        title = gameState.currentWord
         tableView.reloadData()
     }
 
@@ -53,6 +72,12 @@ final class TableViewController: UITableViewController {
         alertController.addAction(submitAlertAction)
         present(alertController, animated: true)
     }
+    
+    @objc private func saveGameState() {
+        if let encodedState = try? JSONEncoder().encode(gameState) {
+            UserDefaults.standard.set(encodedState, forKey: "GameState")
+        }
+    }
 
     private func submit(_ answer: String) {
         let lowerAnswer = answer.lowercased()
@@ -60,8 +85,11 @@ final class TableViewController: UITableViewController {
         if isPossible(word: lowerAnswer) {
             if isOriginal(word: lowerAnswer) {
                 if isReal(word: lowerAnswer) {
-                    usedWords.insert(lowerAnswer, at: 0)
+                    gameState.usedWords.insert(lowerAnswer, at: 0)
 
+//                    performSelector(inBackground: #selector(saveGameState), with: nil)
+                    saveGameState()
+                    
                     let indexPath = IndexPath(row: 0, section: 0)
                     tableView.insertRows(at: [indexPath], with: .automatic)
                 } else {
@@ -99,7 +127,7 @@ final class TableViewController: UITableViewController {
     }
 
     private func isOriginal(word: String) -> Bool {
-        !usedWords.contains(word)
+        !gameState.usedWords.contains(word)
     }
 
     private func isReal(word: String) -> Bool {
@@ -122,7 +150,7 @@ final class TableViewController: UITableViewController {
 // MARK: - UITableViewController
 extension TableViewController {
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        usedWords.count
+        gameState.usedWords.count
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -130,10 +158,10 @@ extension TableViewController {
 
         if #available(iOS 14.0, *) {
             var content = cell.defaultContentConfiguration()
-            content.text = usedWords[indexPath.row]
+            content.text = gameState.usedWords[indexPath.row]
             cell.contentConfiguration = content
         } else {
-            cell.textLabel?.text = usedWords[indexPath.row]
+            cell.textLabel?.text = gameState.usedWords[indexPath.row]
         }
 
         return cell
